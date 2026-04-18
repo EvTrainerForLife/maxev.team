@@ -1,0 +1,15 @@
+# Xcode project & Swift source — never push to public repo
+MaxEV.xcodeproj/
+MaxEV/*.swift
+MaxEV/*.storekit
+MaxEV/*.xcprivacy
+MaxEV/*.db
+MaxEV/Assets.xcassets/
+build_pokedex.py
+
+# macOS
+.DS_Store
+
+# Xcode user data
+xcuserdata/
+*.xcworkspace/xcuserdata/

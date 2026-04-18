@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MaxEV – EV Training Companion</title>
+  <meta name="description" content="MaxEV is the EV training companion for Pokémon. Track EVs, build parties, and maximise every stat across every generation." />
+  <meta property="og:title" content="MaxEV – EV Training Companion" />
+  <meta property="og:description" content="Track EVs, build parties, and maximise every stat across every generation." />
+  <meta property="og:url" content="https://maxev.team" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #F0EEE9;
+      --black:    #1a1a1a;
+      --muted:    #888;
+      --border:   #D9D9D9;
+      --hp:       #FF5959;
+      --atk:      #F5AC78;
+      --def:      #FAE078;
+      --spa:      #9DB7F5;
+      --spd:      #A7DB8D;
+      --spe:      #FA92B2;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: "Outfit", -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--black);
+      overflow-x: hidden;
+    }
+
+    /* ── Floating background ── */
+    .floaters {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+    .floater {
+      position: absolute;
+      font-size: 22px;
+      opacity: 0;
+      animation: drift linear infinite;
+    }
+    @keyframes drift {
+      0%   { transform: translateX(-80px); opacity: 0; }
+      8%   { opacity: 0.12; }
+      92%  { opacity: 0.12; }
+      100% { transform: translateX(calc(100vw + 80px)); opacity: 0; }
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 32px;
+      background: rgba(240,238,233,0.88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-family: "Press Start 2P", monospace;
+      font-size: 14px;
+      letter-spacing: 2px;
+      color: var(--black);
+      text-decoration: none;
+    }
+    .nav-links { display: flex; gap: 24px; align-items: center; }
+    .nav-links a {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--black);
+      opacity: 0.6;
+      text-decoration: none;
+      transition: opacity 0.15s;
+    }
+    .nav-links a:hover { opacity: 1; }
+
+    /* ── Sections ── */
+    section { position: relative; z-index: 1; }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px 24px 60px;
+      gap: 24px;
+    }
+    .hero-logo {
+      width: 180px;
+      height: 180px;
+      object-fit: contain;
+      animation: heroIn 0.7s cubic-bezier(0.34,1.56,0.64,1) both,
+                 breathe 3s ease-in-out 0.9s infinite alternate;
+    }
+    /* If logo image not present yet, show a placeholder ring */
+    .hero-logo-placeholder {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      border: 6px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      animation: heroIn 0.7s cubic-bezier(0.34,1.56,0.64,1) both,
+                 breathe 3s ease-in-out 0.9s infinite alternate;
+    }
+    @keyframes heroIn {
+      from { opacity: 0; transform: scale(0.4); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    @keyframes breathe {
+      from { transform: scale(1); }
+      to   { transform: scale(1.04); }
+    }
+    .hero-title {
+      font-family: "Press Start 2P", monospace;
+      font-size: clamp(28px, 6vw, 48px);
+      letter-spacing: 6px;
+      line-height: 1.4;
+    }
+    .hero-sub {
+      font-size: clamp(16px, 2.5vw, 20px);
+      font-weight: 400;
+      color: #555;
+      max-width: 520px;
+      line-height: 1.6;
+    }
+    .hero-cta {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 18px 36px;
+      background: var(--black);
+      color: var(--bg);
+      font-family: "Press Start 2P", monospace;
+      font-size: 12px;
+      letter-spacing: 1px;
+      border-radius: 14px;
+      text-decoration: none;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.15);
+    }
+    .hero-cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 6px 6px 0 rgba(0,0,0,0.15);
+    }
+    .hero-cta.soon {
+      background: var(--border);
+      color: #999;
+      cursor: default;
+      box-shadow: none;
+    }
+    .hero-cta.soon:hover { transform: none; }
+    .hero-sub-cta {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: -8px;
+    }
+    .hero-sub-cta a { color: var(--black); font-weight: 600; }
+
+    /* ── Stats bar ── */
+    .stats-bar {
+      display: flex;
+      justify-content: center;
+      gap: 0;
+      padding: 20px 24px;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: white;
+      flex-wrap: wrap;
+    }
+    .stat-pill {
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 800;
+      border-radius: 99px;
+      margin: 4px;
+    }
+    .stat-hp  { background: var(--hp);  color: white; }
+    .stat-atk { background: var(--atk); color: white; }
+    .stat-def { background: var(--def); color: var(--black); }
+    .stat-spa { background: var(--spa); color: white; }
+    .stat-spd { background: var(--spd); color: var(--black); }
+    .stat-spe { background: var(--spe); color: var(--black); }
+
+    /* ── Features ── */
+    .features {
+      padding: 100px 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .section-label {
+      font-family: "Press Start 2P", monospace;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: clamp(24px, 4vw, 36px);
+      font-weight: 800;
+      margin-bottom: 56px;
+      line-height: 1.2;
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 24px;
+    }
+    .feature-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px 28px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+    }
+    .feature-icon {
+      font-size: 36px;
+      margin-bottom: 16px;
+      display: block;
+    }
+    .feature-card h3 {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+    .feature-card p {
+      font-size: 14px;
+      line-height: 1.7;
+      color: #666;
+    }
+
+    /* ── Generations ── */
+    .generations {
+      padding: 80px 24px;
+      background: var(--black);
+      text-align: center;
+    }
+    .generations .section-label { color: #666; }
+    .generations .section-title { color: white; margin-bottom: 40px; }
+    .gen-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .gen-badge {
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      border: 1px solid rgba(255,255,255,0.15);
+      color: white;
+      background: rgba(255,255,255,0.08);
+    }
+    .gen-badge.coming {
+      opacity: 0.4;
+      border-style: dashed;
+    }
+
+    /* ── Community ── */
+    .community {
+      padding: 100px 24px;
+      max-width: 780px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .community .section-title { margin-bottom: 20px; }
+    .community p {
+      font-size: 17px;
+      line-height: 1.8;
+      color: #555;
+      margin-bottom: 16px;
+    }
+    .charity-box {
+      margin: 48px auto 0;
+      padding: 36px 40px;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+    .charity-box .big-emoji { font-size: 48px; }
+    .charity-box h3 { font-size: 22px; font-weight: 800; }
+    .charity-box p  { font-size: 15px; color: #666; max-width: 480px; }
+    .charity-box .tag {
+      display: inline-block;
+      padding: 6px 14px;
+      background: var(--spd);
+      color: var(--black);
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    /* ── Coming Soon ── */
+    .coming-soon {
+      padding: 100px 24px;
+      background: var(--bg);
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .coming-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 24px;
+      margin-top: 56px;
+    }
+    .coming-card {
+      border-radius: 20px;
+      padding: 36px 28px;
+      position: relative;
+      overflow: hidden;
+      min-height: 180px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+    .coming-card .cs-badge {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: rgba(0,0,0,0.3);
+      color: white;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 5px 10px;
+      border-radius: 99px;
+      letter-spacing: 1px;
+    }
+    .coming-card h3 {
+      font-family: "Press Start 2P", monospace;
+      font-size: 14px;
+      color: white;
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+    .coming-card p { font-size: 13px; color: rgba(255,255,255,0.75); line-height: 1.6; }
+    .card-arceus  { background: linear-gradient(135deg, #C8C090, #706838, #302808); }
+    .card-winds   { background: linear-gradient(135deg, #C8EDD8, #48C090, #0A6840); }
+    .card-waves   { background: linear-gradient(150deg, #C0E8F8, #3898D0, #1038B0); }
+
+    /* ── Footer ── */
+    footer {
+      background: var(--black);
+      color: white;
+      padding: 48px 32px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+    footer .footer-logo {
+      font-family: "Press Start 2P", monospace;
+      font-size: 14px;
+      letter-spacing: 2px;
+    }
+    footer .footer-links { display: flex; gap: 24px; }
+    footer .footer-links a {
+      color: white;
+      opacity: 0.5;
+      text-decoration: none;
+      font-size: 14px;
+      transition: opacity 0.15s;
+    }
+    footer .footer-links a:hover { opacity: 1; }
+    footer .footer-copy { font-size: 13px; opacity: 0.35; width: 100%; text-align: center; margin-top: 8px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      nav { padding: 14px 20px; }
+      .nav-links { display: none; }
+      footer { flex-direction: column; text-align: center; }
+      footer .footer-links { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating background symbols -->
+  <div class="floaters" aria-hidden="true">
+    <span class="floater" style="top:15%; animation-duration:9s;  animation-delay:0s;">🔥</span>
+    <span class="floater" style="top:55%; animation-duration:11s; animation-delay:1.4s;">🔥</span>
+    <span class="floater" style="top:80%; animation-duration:8s;  animation-delay:2.8s;">🔥</span>
+    <span class="floater" style="top:30%; animation-duration:10s; animation-delay:4.2s;">🔥</span>
+    <span class="floater" style="top:70%; animation-duration:9s;  animation-delay:5.6s;">🔥</span>
+    <span class="floater" style="top:10%; animation-duration:12s; animation-delay:7s;">🍃</span>
+    <span class="floater" style="top:45%; animation-duration:10s; animation-delay:8.4s;">🍃</span>
+    <span class="floater" style="top:65%; animation-duration:9s;  animation-delay:9.8s;">🍃</span>
+    <span class="floater" style="top:25%; animation-duration:11s; animation-delay:11.2s;">💧</span>
+    <span class="floater" style="top:75%; animation-duration:8s;  animation-delay:12.6s;">💧</span>
+    <span class="floater" style="top:40%; animation-duration:10s; animation-delay:14s;">💎</span>
+    <span class="floater" style="top:85%; animation-duration:9s;  animation-delay:15.4s;">💎</span>
+  </div>
+
+  <!-- Nav -->
+  <nav>
+    <a href="/" class="nav-logo">MaxEV</a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#coming-soon">What's Next</a>
+      <a href="#community">Community</a>
+      <a href="/privacy/">Privacy</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <img src="logo.png" alt="MaxEV Logo" class="hero-logo" />
+
+    <h1 class="hero-title">MaxEV</h1>
+    <p class="hero-sub">The EV training companion. Track EVs, build parties, and maximise every stat — across every generation.</p>
+
+    <a href="#" class="hero-cta soon">Coming to the App Store</a>
+    <p class="hero-sub-cta">
+      Want to be notified at launch?
+      <a href="mailto:tony@maxev.team?subject=MaxEV Launch Notification">Drop us an email →</a>
+    </p>
+  </section>
+
+  <!-- Stat pills -->
+  <div class="stats-bar" role="presentation">
+    <span class="stat-pill stat-hp">HP</span>
+    <span class="stat-pill stat-atk">ATK</span>
+    <span class="stat-pill stat-def">DEF</span>
+    <span class="stat-pill stat-spa">SP.A</span>
+    <span class="stat-pill stat-spd">SP.D</span>
+    <span class="stat-pill stat-spe">SPE</span>
+  </div>
+
+  <!-- Features -->
+  <section class="features" id="features">
+    <p class="section-label">What it does</p>
+    <h2 class="section-title">Everything you need.<br>Nothing you don't.</h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <span class="feature-icon">🎯</span>
+        <h3>KO Tracker</h3>
+        <p>Tap KO and MaxEV calculates exactly how many EVs you gained — including Power Items, Pokérus, and Macho Brace multipliers.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🧩</span>
+        <h3>Party Builder</h3>
+        <p>Build and name your EV training parties. Track progress across every Pokémon in your roster simultaneously.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🍓</span>
+        <h3>Berry Correction</h3>
+        <p>Over-trained a stat? Log a berry reduction with one tap. MaxEV applies the correct formula automatically.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🔍</span>
+        <h3>Target Search</h3>
+        <p>Search any Pokémon by name or filter by EV type. See which targets yield the most EVs per KO, sorted for efficiency.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Generations -->
+  <section class="generations">
+    <p class="section-label">Coverage</p>
+    <h2 class="section-title">Every generation. Every game.</h2>
+    <div class="gen-grid">
+      <span class="gen-badge">Fire Red</span>
+      <span class="gen-badge">Leaf Green</span>
+      <span class="gen-badge">Diamond</span>
+      <span class="gen-badge">Pearl</span>
+      <span class="gen-badge">Platinum</span>
+      <span class="gen-badge">HeartGold</span>
+      <span class="gen-badge">SoulSilver</span>
+      <span class="gen-badge">Black</span>
+      <span class="gen-badge">White</span>
+      <span class="gen-badge">Black 2</span>
+      <span class="gen-badge">White 2</span>
+      <span class="gen-badge">X</span>
+      <span class="gen-badge">Y</span>
+      <span class="gen-badge">Omega Ruby</span>
+      <span class="gen-badge">Alpha Sapphire</span>
+      <span class="gen-badge">Sun</span>
+      <span class="gen-badge">Moon</span>
+      <span class="gen-badge">Ultra Sun</span>
+      <span class="gen-badge">Ultra Moon</span>
+      <span class="gen-badge">Sword</span>
+      <span class="gen-badge">Shield</span>
+      <span class="gen-badge">Brilliant Diamond</span>
+      <span class="gen-badge">Shining Pearl</span>
+      <span class="gen-badge">Scarlet</span>
+      <span class="gen-badge">Violet</span>
+      <span class="gen-badge">Legends: Z-A</span>
+      <span class="gen-badge coming">Legends: Arceus ✦</span>
+      <span class="gen-badge coming">Winds ✦</span>
+      <span class="gen-badge coming">Waves ✦</span>
+    </div>
+  </section>
+
+  <!-- Coming Soon -->
+  <section id="coming-soon">
+    <div class="coming-soon">
+      <p class="section-label">What's next</p>
+      <h2 class="section-title">The roadmap is just getting started.</h2>
+      <div class="coming-grid">
+        <div class="coming-card card-arceus">
+          <span class="cs-badge">✦ COMING SOON</span>
+          <h3>Legends: Arceus</h3>
+          <p>Full Effort Level tracking — a completely new system built for the Hisui region.</p>
+        </div>
+        <div class="coming-card card-winds">
+          <span class="cs-badge">✦ COMING SOON</span>
+          <h3>Pokémon Winds</h3>
+          <p>Ready the moment the game launches. Gen 10 support is already in the works.</p>
+        </div>
+        <div class="coming-card card-waves">
+          <span class="cs-badge">✦ COMING SOON</span>
+          <h3>Pokémon Waves</h3>
+          <p>Full EV tracking support at launch. No waiting, no updates required.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Community -->
+  <section class="community" id="community">
+    <p class="section-label">Community</p>
+    <h2 class="section-title">Built for the grind. Giving back to the game.</h2>
+    <p>MaxEV exists because the Pokémon community deserved a tool that actually keeps up with how EV training works — across every game, every mechanic, every generation.</p>
+    <p>This isn't a corporate product. It's a passion project built by a trainer, for trainers. Questions or feedback? <a href="mailto:tony@maxev.team" style="color:var(--black);font-weight:700;">Reach out directly.</a></p>
+
+    <div class="charity-box">
+      <span class="big-emoji">🌍</span>
+      <span class="tag">Subscriber Benefit</span>
+      <h3>Twice a year, you choose where we give.</h3>
+      <p>Every June and December, subscribers vote on a charity to receive a donation from MaxEV's revenue. Your subscription doesn't just support the app — it supports something bigger.</p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <span class="footer-logo">MaxEV</span>
+    <div class="footer-links">
+      <a href="/privacy/">Privacy Policy</a>
+      <a href="mailto:tony@maxev.team">Contact</a>
+    </div>
+    <p class="footer-copy">&copy; 2026 MaxEV. All rights reserved. Not affiliated with Nintendo or Game Freak.</p>
+  </footer>
+
+</body>
+</html>

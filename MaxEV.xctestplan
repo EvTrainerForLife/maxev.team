@@ -1,0 +1,30 @@
+{
+  "configurations" : [
+    {
+      "id" : "AAC0D961-335C-4F6F-914C-79EB7C7D2F34",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:MaxEV.xcodeproj",
+      "identifier" : "9333063C2F591E490063754E",
+      "name" : "MaxEV"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:MaxEV.xcodeproj",
+        "identifier" : "9347BBAD2F93D5B300D4C6A8",
+        "name" : "MaxEVTests"
+      }
+    }
+  ],
+  "version" : 1
+}
